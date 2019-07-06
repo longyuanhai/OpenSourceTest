@@ -1,0 +1,5 @@
+Log file created at: 2019/06/30 20:20:09
+Running on machine: DESKTOP-U98O7AB
+Log line format: [IWEF]mmdd hh:mm:ss.uuuuuu threadid file:line] msg
+E0630 20:20:09.601251   884 glogtest.cpp:23] error message
+E0630 20:20:09.605242   884 Դ.cpp:8] error 3333 message
