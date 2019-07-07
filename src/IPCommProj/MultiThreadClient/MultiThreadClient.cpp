@@ -3,9 +3,12 @@
 
 #include "pch.h"
 #include <iostream>
-
+#include "message11.pb.h"
 #include <WinSock2.h>
 #include <Ws2tcpip.h>
+
+
+using namespace UService;
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -63,10 +66,11 @@ int main() {
 	//
 	freeaddrinfo(result);
 	//
-	char send_buf[SEND_BUF_SIZE];
-	int recv_result = 0;
+//	char send_buf[SEND_BUF_SIZE];
+	int recv_result = 1;
 	//SecureZeroMemory(send_buf, SEND_BUF_SIZE);
 	do {
+		/*
 		cout << "enter the message that you want to send: " << flush;
 		cin.getline(send_buf, SEND_BUF_SIZE);
 		i_result = send(sock_client, send_buf, static_cast<int>(strlen(send_buf)), 0);
@@ -93,7 +97,22 @@ int main() {
 			WSACleanup();
 			system("pause");
 			return 1;
-		}
+		}*/
+		MYMessage myMessage;
+		myMessage.set_type(UService::MSG::KeepAlive_Request);
+		myMessage.set_sequence(3);
+
+		Request * request = myMessage.mutable_request();
+		LoginRequest * loginRequest = request->mutable_loginrequest();
+		loginRequest->set_username("user1");
+		loginRequest->set_password("mypasswd");
+
+
+		int size = myMessage.ByteSize();
+		std::cout << "myMessage size is: " << size << std::endl;
+		char * buf = new char[size + 4];
+		myMessage.SerializeToArray((void *)(buf + 4), size);
+
 	} while (recv_result > 0);
 	//
 	i_result = shutdown(sock_client, SD_SEND);

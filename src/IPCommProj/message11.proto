@@ -1,0 +1,74 @@
+syntax="proto3";
+
+package UService;
+
+enum MSG
+{
+  
+  Login_Request  = 0;
+  Login_Response = 1;
+
+  KeepAlive_Request =2;
+  KeepAlive_Response = 3;
+
+  Incoming_Indication = 4;
+}
+
+
+message LoginRequest
+{
+   bytes username = 1;
+   string password = 2;
+}
+
+message LoginResponse
+{
+   string sessionid = 1;
+}
+
+
+
+message KeepAliveRequest
+{
+   string sessionid = 1;
+}
+
+message KeepAliveResponse
+{
+   string cainiao = 1;
+}
+
+
+message IncomingIndication
+{
+   bytes username = 1;
+}
+
+
+message Request
+{ 
+   LoginRequest       loginRequest =1;
+   KeepAliveRequest   keepAliveRequest=2;
+}
+message Response
+{
+  bool result = 1;
+  bytes err_description = 2;
+  LoginResponse  loginResponse =3;
+  KeepAliveResponse keepAliveResponse =4;
+
+}
+message Indication
+{
+   IncomingIndication  incomingIndication=1;
+}
+
+
+message MYMessage
+{
+   MSG type = 1;
+   fixed32 sequence = 2;   
+   Request request = 3;
+   Response response = 4;
+   Indication indication = 5;
+}
