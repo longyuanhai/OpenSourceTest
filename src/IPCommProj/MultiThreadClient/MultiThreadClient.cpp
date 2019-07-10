@@ -6,6 +6,7 @@
 #include "message11.pb.h"
 #include <WinSock2.h>
 #include <Ws2tcpip.h>
+#include <string>
 
 
 using namespace UService;
@@ -17,9 +18,11 @@ using std::cerr;
 using std::cout;
 using std::endl;
 using std::flush;
+using namespace std;
 
 const char DEFAULT_PORT[] = "5000";
 const int SEND_BUF_SIZE = 256;
+const int PACKET_HEAD_SIZE = 4;  //报文的包头长度，4字节，表示包体的字节数
 
 //客户端
 int main() {
@@ -67,7 +70,7 @@ int main() {
 	freeaddrinfo(result);
 	//
 //	char send_buf[SEND_BUF_SIZE];
-	int recv_result = 1;
+	int send_count = 5;
 	//SecureZeroMemory(send_buf, SEND_BUF_SIZE);
 	do {
 		/*
@@ -104,16 +107,41 @@ int main() {
 
 		Request * request = myMessage.mutable_request();
 		LoginRequest * loginRequest = request->mutable_loginrequest();
-		loginRequest->set_username("user1");
-		loginRequest->set_password("mypasswd");
+
+		static int userId = 0;
+		string username("userId"+userId++) ;
+		std::cout << "username is: " << username << std::endl;
+
+		static int passwordId = 0;
+		string password("password" + passwordId++);
+		std::cout << "password is: " << password << std::endl;
 
 
-		int size = myMessage.ByteSize();
-		std::cout << "myMessage size is: " << size << std::endl;
-		char * buf = new char[size + 4];
-		myMessage.SerializeToArray((void *)(buf + 4), size);
+		loginRequest->set_username(username.c_str());
+		loginRequest->set_password(password.c_str());
 
-	} while (recv_result > 0);
+
+		int body_size = myMessage.ByteSize();
+		std::cout << "myMessage body_size is: " << body_size << std::endl;
+		char * buf = new char[ PACKET_HEAD_SIZE+ body_size];             //报文的整体长度
+		myMessage.SerializeToArray((void *)(buf + PACKET_HEAD_SIZE), body_size);   //设置包体,Protobuf格式
+	
+
+		/*设置包头，为4字节，内容为包体长度*/
+		*((int *)buf) = htonl(body_size);       
+
+		i_result = send(sock_client, buf, 4+ body_size, 0);
+		if (i_result == SOCKET_ERROR) {
+			cerr << "send() function failed with error: " << WSAGetLastError() << "\n";
+			closesocket(sock_client);
+			WSACleanup();
+			system("pause");
+			return 1;
+		}
+
+	//	_itoa_s(size2, buf2,10,10);
+
+	} while (--send_count>0);
 	//
 	i_result = shutdown(sock_client, SD_SEND);
 	if (i_result == SOCKET_ERROR) {

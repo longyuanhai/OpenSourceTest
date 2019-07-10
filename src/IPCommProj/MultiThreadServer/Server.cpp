@@ -1,10 +1,18 @@
-#include "server.h"
-#include <iostream>
-#include <WS2tcpip.h>
 
+
+
+#include "pch.h"
+#include <iostream>
+#include "message11.pb.h"
+#include "server.h"
+#include <WinSock2.h>
+#include <Ws2tcpip.h>
+
+using namespace UService;
 using std::cerr;
 using std::cout;
 using std::endl;
+
 
 #define SERVER_PORT 5000
 #define MSG_BUF_SIZE 1024
@@ -106,8 +114,51 @@ DWORD WINAPI CreateClientThread(LPVOID lpParameter)
 	int snd_result = 0;
 	do
 	{
-		memset(buf_msg, 0, MSG_BUF_SIZE);
-		ret_val = ::recv(sock_clt, buf_msg, MSG_BUF_SIZE, 0);
+	//	memset(buf_msg, 0, MSG_BUF_SIZE);
+		int ret_headsize = 0;
+		do{
+		  ret_headsize = ::recv(sock_clt, buf_msg+ ret_headsize, 4- ret_headsize, 0);
+	/*	  if (ret_headsize == 0)
+		  {
+			  cout << "connection closed..." << endl;
+		  } */
+		  if(ret_headsize <0)
+		  {
+			  cerr << "Failed to receive message from client!Error code: " << ::GetLastError() << "\n";
+			  ::closesocket(sock_clt);
+			  system("pause");
+			  return 1;
+		  }
+		}while (4 - ret_headsize >0);
+
+		int bodysize = ntohl(*(int *)buf_msg);
+		cout << "Message received bodysize is: " << bodysize << endl;
+     
+
+		int ret_bodysize = 0;
+		do {
+			ret_bodysize = ::recv(sock_clt, buf_msg+ ret_bodysize, bodysize - ret_bodysize, 0);
+			if (ret_bodysize == 0)
+			{
+				cout << "connection closed..." << endl;
+			}
+			else if (ret_bodysize < 0)
+			{
+				cerr << "Failed to receive message from client!Error code: " << ::GetLastError() << "\n";
+				::closesocket(sock_clt);
+				system("pause");
+				return 1;
+			}
+		} while (bodysize - ret_bodysize > 0);
+
+		MYMessage myMessage;
+		myMessage.ParseFromArray((void *)buf_msg, bodysize);
+
+		myMessage.PrintDebugString();
+				
+
+		/*
+		
 		if (ret_val > 0)
 		{
 			if (strcmp(buf_msg, "exit") == 0)
@@ -138,7 +189,8 @@ DWORD WINAPI CreateClientThread(LPVOID lpParameter)
 			system("pause");
 			return 1;
 		}
-	} while (ret_val > 0);
+		*/
+	} while (1);
 	//
 	ret_val = ::shutdown(sock_clt, SD_SEND);
 	if (ret_val == SOCKET_ERROR)
